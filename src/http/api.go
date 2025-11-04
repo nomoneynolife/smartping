@@ -552,6 +552,32 @@ func configApiRoutes() {
 		RenderJson(w, preout)
 	})
 
+	//发送企业微信机器人测试
+	http.HandleFunc("/api/sendwechattest.json", func(w http.ResponseWriter, r *http.Request) {
+		if !AuthUserIp(r.RemoteAddr) && !AuthAgentIp(r.RemoteAddr, true) {
+			o := "Your ip address (" + r.RemoteAddr + ")  is not allowed to access this site!"
+			http.Error(w, o, 401)
+			return
+		}
+		preout := make(map[string]string)
+		r.ParseForm()
+		preout["status"] = "false"
+		if len(r.Form["WechatWebhook"]) == 0 {
+			preout["info"] = "企业微信机器人Webhook地址不能为空!"
+			RenderJson(w, preout)
+			return
+		}
+
+		err := SendWechatRobotTest(r.Form["WechatWebhook"][0], r.Form["WechatMentionedList"][0], r.Form["WechatMentionedMobile"][0])
+		if err != nil {
+			preout["info"] = err.Error()
+			RenderJson(w, preout)
+			return
+		}
+		preout["status"] = "true"
+		RenderJson(w, preout)
+	})
+
 	//Ping画图
 	http.HandleFunc("/api/graph.png", func(w http.ResponseWriter, r *http.Request) {
 		if !AuthUserIp(r.RemoteAddr) {

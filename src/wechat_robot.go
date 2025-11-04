@@ -92,16 +92,11 @@ func SendWechatRobotMessage(webhookURL string, mentionedList string, mentionedMo
 }
 
 // SendWechatRobotAlert 发送企业微信机器人告警消息
-func SendWechatRobotAlert(config map[string]interface{}, alertTitle string, alertContent string) error {
+func SendWechatRobotAlert(alertConfig map[string]string, alertTitle string, alertContent string) error {
 	// 获取配置
-	alertConfig, ok := config["Alert"].(map[string]interface{})
-	if !ok {
-		return fmt.Errorf("告警配置格式错误")
-	}
-	
-	webhookURL, _ := alertConfig["WechatWebhook"].(string)
-	mentionedList, _ := alertConfig["WechatMentionedList"].(string)
-	mentionedMobile, _ := alertConfig["WechatMentionedMobile"].(string)
+	webhookURL := alertConfig["WechatWebhook"]
+	mentionedList := alertConfig["WechatMentionedList"]
+	mentionedMobile := alertConfig["WechatMentionedMobile"]
 	
 	// 检查Webhook地址是否配置
 	if webhookURL == "" {

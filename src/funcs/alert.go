@@ -144,3 +144,65 @@ func SendMail(user, pwd, host, to, subject, body string) error {
 	}
 	return nil
 }
+
+// AlertSendWechat 发送企业微信机器人告警消息
+func AlertSendWechat(t g.AlertLog) {
+	hops := []nettools.Mtr{}
+	err := json.Unmarshal([]byte(t.Tracert), &hops)
+	if err != nil {
+		seelog.Error("[func:AlertSendWechat] json Error ", err)
+		return
+	}
+	
+	// 构建告警内容
+	title := "【" + t.Fromname + "->" + t.Targetname + "】网络异常报警（" + t.Logtime + "）- SmartPing"
+	content := "报警时间：" + t.Logtime + "\n"
+	content += "来路：" + t.Fromname + "(" + t.Fromip + ")\n"
+	content += "目的：" + t.Targetname + "(" + t.Targetip + ")\n"
+	
+	// 添加路由追踪信息
+	if len(hops) > 0 {
+		content += "\n路由追踪信息：\n"
+		for i, hop := range hops {
+			content += fmt.Sprintf("%d. %s - 丢包率: %.2f%%, 平均延迟: %.2fms\n", 
+				i+1, hop.Host, ((float64(hop.Loss)/float64(hop.Send))*100), hop.Avg)
+		}
+	}
+	
+	// 发送企业微信机器人消息
+	err = SendWechatRobotAlert(g.Cfg.Alert, title, content)
+	if err != nil {
+		seelog.Error("[func:AlertSendWechat] SendWechatRobotAlert Error ", err)
+	}
+}
+
+// AlertSendWechat 发送企业微信机器人告警消息
+func AlertSendWechat(t g.AlertLog) {
+	hops := []nettools.Mtr{}
+	err := json.Unmarshal([]byte(t.Tracert), &hops)
+	if err != nil {
+		seelog.Error("[func:AlertSendWechat] json Error ", err)
+		return
+	}
+	
+	// 构建告警内容
+	title := "【" + t.Fromname + "->" + t.Targetname + "】网络异常报警（" + t.Logtime + "）- SmartPing"
+	content := "报警时间：" + t.Logtime + "\n"
+	content += "来路：" + t.Fromname + "(" + t.Fromip + ")\n"
+	content += "目的：" + t.Targetname + "(" + t.Targetip + ")\n"
+	
+	// 添加路由追踪信息
+	if len(hops) > 0 {
+		content += "\n路由追踪信息：\n"
+		for i, hop := range hops {
+			content += fmt.Sprintf("%d. %s - 丢包率: %.2f%%, 平均延迟: %.2fms\n", 
+				i+1, hop.Host, ((float64(hop.Loss)/float64(hop.Send))*100), hop.Avg)
+		}
+	}
+	
+	// 发送企业微信机器人消息
+	err = SendWechatRobotAlert(g.Cfg.Alert, title, content)
+	if err != nil {
+		seelog.Error("[func:AlertSendWechat] SendWechatRobotAlert Error ", err)
+	}
+}
