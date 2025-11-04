@@ -141,8 +141,8 @@
           $.each(result["Network"][result["Addr"]]["Ping"], function(i, mAddr){
               $("#lineChart").append("<div class='img showcharts' " +
                   "style='text-align:center;float:left;width:30.3%;height:130px;margin-right:3%;margin-top:20px;;background-size:100% 100%;' " +
-                  "imgsrc='/api/graph.png?g=http://"+result["Addr"]+":"+result["Port"]+"/api/ping.json?ip="+mAddr+"' " +
-                  "apiurl='/api/proxy.json?g=http://"+result["Addr"]+":"+result["Port"]+"/api/ping.json?ip="+mAddr+"' >" +
+                  "imgsrc='/api/graph.png?ip="+mAddr+"' " +
+                  "apiurl='/api/ping.json?ip="+mAddr+"' >" +
                   "<b style='font-color:#333333'>"+result["Name"]+"->"+result["Network"][mAddr]["Name"]+"</b></div>");
           });
           layzeImg();

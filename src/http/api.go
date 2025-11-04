@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/cihub/seelog"
-	"github.com/smartping/smartping/src/funcs"
-	"github.com/smartping/smartping/src/g"
-	"github.com/smartping/smartping/src/nettools"
+	"smartping/src/funcs"
+	"smartping/src/g"
+	"smartping/src/nettools"
 	"github.com/wcharczuk/go-chart"
 	"github.com/wcharczuk/go-chart/drawing"
 	"io/ioutil"
@@ -568,7 +568,7 @@ func configApiRoutes() {
 			return
 		}
 
-		err := SendWechatRobotTest(r.Form["WechatWebhook"][0], r.Form["WechatMentionedList"][0], r.Form["WechatMentionedMobile"][0])
+		err := funcs.SendWechatRobotTest(r.Form["WechatWebhook"][0], r.Form["WechatMentionedList"][0], r.Form["WechatMentionedMobile"][0])
 		if err != nil {
 			preout["info"] = err.Error()
 			RenderJson(w, preout)

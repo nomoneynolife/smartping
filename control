@@ -9,12 +9,13 @@ mkdir -p bin
 module=smartping
 app=$module
 pidfile=var/app.pid
+logfile=var/app.log
 
 function check_pid() {
-    if [ -f $pidfile ];then
-        pid=`cat $pidfile`
-        if [ -n $pid ]; then
-            running=`ps -p $pid|grep -v "PID TTY" |wc -l`
+    if [ -f $pidfile ]; then
+        pid=`cat $pidfile 2>/dev/null`
+        if [ -n "$pid" ]; then
+            running=`ps -p $pid 2>/dev/null | grep -v "PID" | wc -l`
             return $running
         fi
     fi
@@ -22,89 +23,217 @@ function check_pid() {
 }
 
 function run() {
-    ./bin/$app
+    if [ -f ./bin/$app ]; then
+        ./bin/$app
+    else
+        echo "Error: ./bin/$app not found. Please build first."
+        exit 1
+    fi
 }
 
 function start() {
     check_pid
     running=$?
-    if [ $running -gt 0 ];then
-        echo -n "$app now is running already, pid="
+    if [ $running -gt 0 ]; then
+        echo -n "$app is already running, pid="
         cat $pidfile
         return 1
     fi
-    #cd $WORKSPACE/bin
-    nohup ./bin/$app >/dev/null 2>&1 &
-    echo $! > ./$pidfile
-    echo "$app started..., pid=$!"
+    
+    if [ ! -f ./bin/$app ]; then
+        echo "Error: ./bin/$app not found. Please build first with: $0 build"
+        return 1
+    fi
+    
+    nohup ./bin/$app > $logfile 2>&1 &
+    local new_pid=$!
+    echo $new_pid > $pidfile
+    echo "$app started, pid=$new_pid"
+    sleep 1
+    check_pid
+    running=$?
+    if [ $running -eq 0 ]; then
+        echo "Warning: $app may have failed to start. Check $logfile for details."
+        return 1
+    fi
 }
 
 function stop() {
-    pid=`cat $pidfile`
-    kill $pid
-    echo "$app stoped..."
+    if [ -f $pidfile ]; then
+        pid=`cat $pidfile 2>/dev/null`
+        if [ -n "$pid" ]; then
+            kill $pid 2>/dev/null
+            # Wait for process to terminate
+            for i in {1..10}; do
+                check_pid
+                running=$?
+                if [ $running -eq 0 ]; then
+                    break
+                fi
+                sleep 1
+            done
+            # Force kill if still running
+            check_pid
+            running=$?
+            if [ $running -gt 0 ]; then
+                kill -9 $pid 2>/dev/null
+            fi
+            echo "$app stopped"
+        fi
+        rm -f $pidfile
+    else
+        echo "$app is not running (pidfile not found)"
+    fi
 }
 
 function restart() {
     stop
-    sleep 1
+    sleep 2
     start
 }
 
 function status() {
     check_pid
     running=$?
-    if [ $running -gt 0 ];then
-        echo started
+    if [ $running -gt 0 ]; then
+        echo "$app is running (pid: $(cat $pidfile 2>/dev/null))"
     else
-        echo stoped
+        echo "$app is stopped"
+        # Clean up stale pid file
+        if [ -f $pidfile ]; then
+            rm -f $pidfile
+        fi
     fi
 }
 
-
 function build() {
-    go get -v ./...
-    #go build src/ping/goping/goping.go
-    go build src/smartping.go
-    if [ $? -ne 0 ]; then
-        exit $?
+    echo "Building $app..."
+    
+    # Check if go.mod exists, if not initialize module
+    if [ ! -f go.mod ]; then
+        echo "Initializing Go module..."
+        go mod init smartping 2>/dev/null || go mod init github.com/$(basename $WORKSPACE) 2>/dev/null
     fi
-    mv $module ./bin/$app
-    #mv goping ./bin/goping
+    
+    # Set GOPROXY for China users if needed
+    # export GOPROXY=https://goproxy.cn,direct
+    
+    go get -v ./...
+    if [ $? -ne 0 ]; then
+        echo "Warning: go get failed, but continuing build..."
+    fi
+    
+    go build -o ./bin/$app src/smartping.go
+    if [ $? -eq 0 ]; then
+        echo "Build successful: ./bin/$app"
+        # Make executable
+        chmod +x ./bin/$app
+    else
+        echo "Build failed"
+        exit 1
+    fi
 }
 
 function version() {
-     ./bin/$app -v
+    if [ -f ./bin/$app ]; then
+        ./bin/$app -v
+    else
+        echo "$app not built. Run '$0 build' first."
+        exit 1
+    fi
 }
 
 function pack() {
-    build
-    version=`./bin/$app -v`
-    tar zcvf $app-v$version.tar.gz conf/ bin/ html/ db/ control --exclude conf/config.json  --exclude  bin/nssm.exe  --exclude  db/database.db
+    if [ ! -f ./bin/$app ]; then
+        build
+    fi
+    
+    local version_str=$(./bin/$app -v 2>/dev/null | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | head -1)
+    if [ -z "$version_str" ]; then
+        version_str="unknown"
+    fi
+    
+    local tar_name="$app-v$version_str.tar.gz"
+    echo "Packing $tar_name..."
+    
+    # Create package with necessary files, exclude large or config files
+    tar zcvf $tar_name \
+        --exclude='config.json' \
+        --exclude='*.db' \
+        --exclude='*.exe' \
+        --exclude='*.log' \
+        conf/ bin/ html/ db/ control var/ 2>/dev/null
+    
+    if [ $? -eq 0 ]; then
+        echo "Package created: $tar_name"
+    else
+        echo "Package creation failed"
+        exit 1
+    fi
+}
+
+function clean() {
+    echo "Cleaning..."
+    rm -rf ./bin/$app var/app.pid var/app.log
+    echo "Clean complete"
 }
 
 function help() {
-    echo "$0 build|run|start|stop|restart|status|version|pack"
+    echo "Usage: $0 {build|run|start|stop|restart|status|version|pack|clean|help}"
+    echo ""
+    echo "Commands:"
+    echo "  build     - Build the application"
+    echo "  run       - Run the application in foreground"
+    echo "  start     - Start the application in background"
+    echo "  stop      - Stop the application"
+    echo "  restart   - Restart the application"
+    echo "  status    - Check application status"
+    echo "  version   - Show application version"
+    echo "  pack      - Build and create distribution package"
+    echo "  clean     - Clean built files"
+    echo "  help      - Show this help message"
 }
 
-if [ "$1" == "" ]; then
-    help
-elif [ "$1" == "run" ];then
-    run
-elif [ "$1" == "stop" ];then
-    stop
-elif [ "$1" == "start" ];then
-    start
-elif [ "$1" == "restart" ];then
-    restart
-elif [ "$1" == "status" ];then
-    status
-elif [ "$1" == "build" ];then
-    build
-elif [ "$1" == "version" ];then
-    version
-elif [ "$1" == "pack" ];then
-    pack
-else
-    help
-fi
+# Main script execution
+case "$1" in
+    "run")
+        run
+        ;;
+    "stop")
+        stop
+        ;;
+    "start")
+        start
+        ;;
+    "restart")
+        restart
+        ;;
+    "status")
+        status
+        ;;
+    "build")
+        build
+        ;;
+    "version")
+        version
+        ;;
+    "pack")
+        pack
+        ;;
+    "clean")
+        clean
+        ;;
+    "help"|"-h"|"--help")
+        help
+        ;;
+    *)
+        if [ -z "$1" ]; then
+            help
+        else
+            echo "Unknown command: $1"
+            echo ""
+            help
+            exit 1
+        fi
+        ;;
+esac
