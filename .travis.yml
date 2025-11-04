@@ -1,0 +1,9 @@
+language: go
+
+matrix:
+  include:
+    - go: 1.9.x
+    
+
+script:
+  - go build src/smartping.go

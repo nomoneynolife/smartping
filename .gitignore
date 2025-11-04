@@ -1,0 +1,25 @@
+# Created by .ignore support plugin (hsz.mobi)  
+  
+.idea/  
+  
+## File-based project format:  
+*.exe
+*.a
+bin/*
+*-journal
+*.db-journal
+*.iml
+db/database.db
+db/ping/*.db
+db/ping/*.lock
+db/alert/*.db
+db/alert/*.lock
+db/mapping/*.db
+db/mapping/*.lock
+html/config/*
+html/doc/*
+src/test*
+conf/config.json
+!bin/nssm.exe*
+logs/*
+html/admin/*
