@@ -27,6 +27,9 @@
 ## 二开优化 ##
 - 支持企业微信推送
 - 优化了首页（正向PING）的展示效果
+- CN：go env -w GOPROXY=https://goproxy.cn,direct
+- go mod tidy
+- go build -o bin/smartping.exe src/smartping.go
 - 弃坑，不在更新！！！浪费几天时间。。。
 
 ## 功能 ##
