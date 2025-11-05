@@ -24,6 +24,10 @@
     </p>    
 </p>
 
+## 二开优化 ##
+- 支持企业微信推送
+- 优化了首页（正向PING）的展示效果
+
 ## 功能 ##
 
 - 正向PING，反向Ping绘图
@@ -36,7 +40,8 @@
 本系统的定位为轻量级工具，即使组多点成互Ping网络可以遵守无中心化原则，所有的数据均存储自身节点中，每个节点提供出方向的数据，从任意节点查询数据均会通过Ajax请求关联节点的API接口获取并组装全部数据。
 ## 项目截图 ##
 
-![app-bg.jpg](http://smartping.org/assets/img/app-bg.png "")
+<img width="1030" height="440" alt="image" src="https://github.com/user-attachments/assets/ce5e4a4e-3a58-4b01-a97d-1d4994f275f7" />
+
 
 ## 技术交流
 
