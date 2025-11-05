@@ -138,19 +138,68 @@
                       "<a onclick=changeAgent('" + network["Name"] + "','http://" + network["Addr"] + ":" + result["Port"] + "')>" + network["Name"] + "</a></td></tr>");
               }
           });
+          // 为每个Ping目标创建图表容器
           $.each(result["Network"][result["Addr"]]["Ping"], function(i, mAddr){
-              $("#lineChart").append("<div class='img showcharts' " +
-                  "style='text-align:center;float:left;width:30.3%;height:130px;margin-right:3%;margin-top:20px;;background-size:100% 100%;' " +
-                  "imgsrc='/api/graph.png?ip="+mAddr+"' " +
-                  "apiurl='/api/ping.json?ip="+mAddr+"' >" +
+              var chartId = "chart-" + mAddr.replace(/\./g, "-");
+              $("#lineChart").append("<div class='chart-container showcharts' " +
+                  "style='text-align:center;float:left;width:30.3%;height:200px;margin-right:3%;margin-top:20px;' " +
+                  "apiurl='/api/proxy.json?g=http://"+result["Addr"]+":"+result["Port"]+"/api/ping.json?ip="+mAddr+"' >" +
+                  "<div id='" + chartId + "' style='width:100%;height:180px;'></div>" +
                   "<b style='font-color:#333333'>"+result["Name"]+"->"+result["Network"][mAddr]["Name"]+"</b></div>");
+              
+              // 初始化小图表
+              initSmallChart(chartId, '/api/proxy.json?g=http://'+result["Addr"]+':'+result["Port"]+'/api/ping.json?ip='+mAddr);
           });
-          layzeImg();
       }).fail(function (xhr, status) {
           alert(xhr.responseText);
           Refresh();
       });
     }
+    
+	function initSmallChart(chartId, apiUrl) {
+        $.get(apiUrl).done(function (data) {
+            var chart = echarts.init(document.getElementById(chartId),{
+				color: ['#00CC66', '#FF0000']
+			});
+			
+            chart.setOption({
+                title: {text: '', show: false},
+                legend: {show: true, top: 0, right: 10, itemWidth: 12, itemHeight: 8},
+                tooltip: {trigger: 'axis'},
+                grid: {left: '5%', right: '5%', bottom: '15%', top: '15%', containLabel: true},
+                xAxis: {
+                    type: 'category',
+                    data: data.lastcheck,
+                    show: false
+                },
+                yAxis: [{
+                    type: 'value',
+                    name: '延迟(ms)',
+                    nameTextStyle: {fontSize: 9},
+                    axisLabel: {fontSize: 8},
+                    min: 0
+                }, {
+                    type: 'value',
+                    name: '丢包率(%)',
+                    nameTextStyle: {fontSize: 9},
+                    axisLabel: {fontSize: 8, formatter: '{value}%'},
+                    min: 0,
+                    max: 100
+                }],
+                series: [{
+                    name: 'avgDelay',
+                    type: 'line',
+                    data: data.avgdelay,
+
+                }, {
+                    name: 'lossPk',
+                    type: 'line',
+                    data: data.losspk
+                }]
+            });
+        });
+    }
+	
     $("#main").on("click",".showcharts",function(){
         //window.clearInterval(int)
         var modalWidth = $("#charts").width();
@@ -322,29 +371,6 @@
     }
     var myChart = echarts.init(document.getElementById('pannel-show'));
     myChart.setOption(opt);
-    function layzeImg() {
-        var aImg = document.querySelectorAll('div.img');
-        var len = aImg.length;
-        var n = 0;
-        for (var i = n; i < len; i++) {
-            if (aImg[i].offsetTop < document.documentElement.clientHeight + (document.body.scrollTop || document.documentElement.scrollTop)) {
-                if (aImg[i].style.backgroundImage == '') {
-                    aImg[i].style.backgroundImage = "url('"+aImg[i].getAttribute('imgsrc')+"')";
-                }
-                n = i + 1;
-            }
-        }
-        window.onscroll = function () {
-            for (var i = n; i < len; i++) {
-                if (aImg[i].offsetTop < document.documentElement.clientHeight + (document.body.scrollTop || document.documentElement.scrollTop)) {
-                    if (aImg[i].style.backgroundImage == '') {
-                        aImg[i].style.backgroundImage = "url('"+aImg[i].getAttribute('imgsrc')+"')";
-                    }
-                    n = i + 1;
-                }
-            }
-        };
-    };
 </script>
 </body>
 </html>
